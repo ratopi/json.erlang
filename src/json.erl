@@ -42,7 +42,7 @@ parse_element(<<$[, Rest/binary>>) ->
 	parse_array(Rest, [], element);
 
 parse_element(<<${, Rest/binary>>) ->
-	parse_object(Rest, [], key);
+	parse_object(Rest, #{}, key);
 
 parse_element(<<Rest/binary>>) ->
 	{error, syntax_error, {"Cannot parse", Rest}}.
@@ -108,43 +108,35 @@ parse_number(<<Rest/binary>>, {float, Text}) ->
 	{ok, list_to_float(lists:reverse(Text)), Rest}.
 
 
+
 parse_array(<<$], Rest/binary>>, Array, _) ->
 	{ok, Array, Rest};
 
-parse_array(<<32, Rest/binary>>, Array, Phase) ->
-	parse_array(Rest, Array, Phase);
-
 parse_array(<<$,, Rest/binary>>, Array, separator) ->
-	parse_array(Rest, Array, element);
+	parse_array(skip_whitespaces(Rest), Array, element);
 
 parse_array(<<Bin/binary>>, Array, element) ->
 	{ok, Element, Rest} = parse(Bin),
-	parse_array(Rest, Array ++ [Element], separator);
-
-parse_array(_, _, _) ->
-	{error, syntax_error, "Syntax error in parsing array"}.
+	parse_array(skip_whitespaces(Rest), Array ++ [Element], separator).
 
 
 
-parse_object(<<32, Rest/binary>>, Map, Phase) ->
-	parse_object(Rest, Map, Phase);
-
-parse_object(<<$}, Rest/binary>>, Map, key) ->
+parse_object(<<"}", Rest/binary>>, Map, key) ->
 	{ok, Map, Rest};
+
+parse_object(<<",", Rest/binary>>, Map, key) ->
+	parse_object(skip_whitespaces(Rest), Map, key);
 
 parse_object(<<Binary/binary>>, Map, key) ->
 	{ok, Key, Rest} = parse(Binary),
-	parse_object(Rest, Map, {separator, Key});
+	parse_object(skip_whitespaces(Rest), Map, {separator, Key});
 
-parse_object(<<$:, Rest/binary>>, Map, {separator, Key}) ->
-	parse_object(Rest, Map, {value, Key});
+parse_object(<<":", Rest/binary>>, Map, {separator, Key}) ->
+	parse_object(skip_whitespaces(Rest), Map, {value, Key});
 
 parse_object(<<Binary/binary>>, Map, {value, Key}) ->
 	{ok, Value, Rest} = parse(Binary),
-	parse_object(Rest, Map ++ [{Key, Value}], key);
-
-parse_object(_, _, _) ->
-	{error, syntax_error, "Syntax error in parsing object"}.
+	parse_object(skip_whitespaces(Rest), maps:put(Key, Value, Map), key).
 
 
 

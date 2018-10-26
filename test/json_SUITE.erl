@@ -13,7 +13,7 @@
 
 %% API
 -export([init_per_suite/1, end_per_suite/1, init_per_testcase/2, end_per_testcase/2, all/0]).
--export([boolean/1, boolean_whitespaces/1, string/1, integer/1, float/1, array_empty/1, array/1]).
+-export([boolean/1, boolean_whitespaces/1, string/1, integer/1, float/1, array/1, object/1]).
 
 all() -> [
 	boolean,
@@ -21,8 +21,8 @@ all() -> [
 	string,
 	integer,
 	float,
-	array_empty,
-	array
+	array,
+	object
 ].
 
 % ---
@@ -71,8 +71,11 @@ float(_Config) ->
 	{ok, 32.0e-10, <<>>} = json:parse(<<"32e-10">>),
 	{ok, -34.0e-10, <<>>} = json:parse(<<"-34e-10">>).
 
-array_empty(_Config) ->
-	{ok, [], <<>>} = json:parse(<<"[]">>).
-
 array(_Config) ->
+	{ok, [], <<>>} = json:parse(<<"[]">>),
 	{ok, [true, "Hello", 3], <<>>} = json:parse(<<"[true,\"Hello\",3]">>).
+
+object(_Config) ->
+	{ok, #{}, <<>>} = json:parse(<<"{}">>),
+	{ok, #{"a" => false}, <<>>} = json:parse(<<"{\"a\": true}">>),
+	{ok, #{"a" => false, "b" => 23}, <<>>} = json:parse(<<"{\"a\": true, \"b\": 23}">>).
